@@ -1,0 +1,9 @@
+SheetJS Community Edition 0.20.3
+Source: https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js
+License: Apache License 2.0
+
+ExcelJS 4.4.0
+Source: https://www.npmjs.com/package/exceljs/v/4.4.0
+License: MIT
+
+These libraries are stored in this repository so Excel processing can run in the browser without loading code from a third-party CDN. Uploaded spreadsheets are not sent to these projects or services.
