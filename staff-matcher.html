@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <title>人员信息匹配工具</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --ink:#18243a; --muted:#67758b; --line:#dfe6ef; --panel:#fff; --bg:#f4f7fb;
+      --blue:#285ad7; --blue-soft:#edf2ff; --teal:#087f79; --teal-soft:#e9f8f5;
+      --green:#18764a; --green-soft:#eaf8f0; --orange:#a65b0c; --orange-soft:#fff4e6;
+      --red:#b23a33; --red-soft:#fff0ef; --shadow:0 16px 44px rgba(34,55,88,.08);
+    }
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#f8fbff 0,var(--bg) 360px);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh}
+    .wrap{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:28px 0 54px}
+    .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:34px}.home{color:#53657e;text-decoration:none;font-size:13px}.home:hover{color:var(--blue)}.privacy{font-size:12px;color:var(--green);background:var(--green-soft);padding:7px 10px;border-radius:9px}
+    .hero{text-align:center;margin:20px auto 32px}.hero-icon{display:grid;place-items:center;width:54px;height:54px;margin:0 auto 16px;border-radius:17px;background:var(--blue-soft);color:var(--blue);font-size:26px}.hero h1{margin:0 0 9px;font-size:30px;letter-spacing:-.025em}.hero p{margin:0;color:var(--muted);font-size:14px;line-height:1.7}
+    .alert{display:none;margin:0 0 16px;padding:13px 15px;border:1px solid #efb8b2;border-radius:12px;background:var(--red-soft);color:#8d2f29;font-size:13px}.alert.show{display:block}
+    .upload-grid{display:grid;grid-template-columns:1fr 54px 1fr;align-items:start;gap:14px}.connector{display:grid;place-items:center;height:230px;color:#8fa0b7;font-size:26px}
+    .drop{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:230px;padding:24px;border:2px dashed #c8d3e1;border-radius:19px;background:rgba(255,255,255,.9);cursor:pointer;text-align:center;transition:.2s;box-shadow:0 2px 10px rgba(32,52,82,.035)}.drop:hover,.drop.drag{transform:translateY(-2px);border-color:var(--blue);box-shadow:var(--shadow)}.drop.actual:hover,.drop.actual.drag{border-color:var(--teal)}.drop.loaded{justify-content:flex-start;align-items:stretch;border-style:solid;text-align:left;cursor:default}.drop input{display:none}.drop-icon{font-size:32px;margin-bottom:12px}.drop h2{font-size:17px;margin:0 0 7px}.drop p{margin:0;color:var(--muted);font-size:12px;line-height:1.65}.hint{margin-top:12px;color:#8795a9;font-size:11px}
+    .loaded-view{display:none;width:100%}.loaded .empty-view{display:none}.loaded .loaded-view{display:block}.file-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:13px}.badge{display:inline-block;padding:4px 8px;border-radius:8px;background:var(--blue-soft);color:var(--blue);font-size:11px;font-weight:700}.actual .badge{background:var(--teal-soft);color:var(--teal)}.remove{border:0;background:#f0f3f7;color:#617086;border-radius:8px;padding:6px 9px;cursor:pointer}.file-list{display:grid;gap:8px;max-height:122px;overflow:auto}.file{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fafcff;font-size:12px}.file small{display:block;color:#8a98aa;margin-top:3px}.file button{border:0;background:transparent;color:#9b6670;cursor:pointer;font-size:15px}.add-more{display:block;margin-top:10px;color:var(--blue);font-size:12px;text-align:center}.single-name{font-size:13px;font-weight:700;word-break:break-all}.single-meta{font-size:12px;color:var(--muted);margin-top:7px}
+    .results{display:none;margin-top:22px}.results.show{display:block}.panel{margin-top:16px;padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--panel);box-shadow:0 3px 16px rgba(34,55,88,.045)}.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}.panel h2{font-size:17px;margin:0}.actions{display:flex;gap:9px;flex-wrap:wrap}.btn{border:0;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:700;cursor:pointer}.btn.primary{background:var(--blue);color:#fff}.btn.secondary{background:#edf1f6;color:#475970}.btn:disabled{opacity:.45;cursor:not-allowed}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{padding:14px;border:1px solid var(--line);border-radius:13px}.stat b{display:block;font-size:25px;margin-bottom:3px}.stat span{font-size:12px;color:var(--muted)}.stat.good{background:var(--green-soft)}.stat.warn{background:var(--orange-soft)}.stat.bad{background:var(--red-soft)}
+    .notice{display:none;margin-top:13px;padding:13px 15px;border:1px solid #f0d3a7;border-radius:12px;background:var(--orange-soft);color:#7d4a10;font-size:12px;line-height:1.7}.notice.show{display:block}.notice ul{margin:0;padding-left:19px}
+    .table-wrap{overflow:auto;max-height:430px;border:1px solid var(--line);border-radius:12px}.table{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;white-space:nowrap}.table th,.table td{padding:9px 10px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);text-align:left}.table th{position:sticky;top:0;background:#edf1f6;z-index:1}.table th:last-child,.table td:last-child{border-right:0}.table tr:last-child td{border-bottom:0}.table tr.matched td{background:#f6fcf8}.table tr.conflict td{background:#fff6f4}.cell-fill{color:var(--green);font-weight:700}.caption{margin:10px 0 0;color:#8795a9;font-size:11px}
+    @media(max-width:760px){.upload-grid{grid-template-columns:1fr}.connector{height:auto;transform:rotate(90deg)}.stats{grid-template-columns:1fr 1fr}.topbar{align-items:flex-start;flex-direction:column}.privacy{line-height:1.5}}
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <div class="topbar"><a class="home" href="index.html">← 返回工作台</a><div class="privacy">✓ Excel 文件只在当前浏览器内处理</div></div>
+  <header class="hero"><div class="hero-icon">⇄</div><h1>人员信息匹配工具</h1><p>计划人员表提供工程和企业信息，实际签到表作为输出底表；身份证号优先匹配，姓名仅用于唯一候选的辅助匹配。</p></header>
+  <div id="alert" class="alert"></div>
+
+  <section class="upload-grid">
+    <label class="drop" id="plannedDrop">
+      <input id="plannedInput" type="file" accept=".xlsx,.xls" multiple>
+      <div class="empty-view"><div class="drop-icon">①</div><h2>计划人员表</h2><p>点击或拖入一个或多个 Excel 文件<br>需包含身份证号或姓名，并提供工程名称、企业名称</p><div class="hint">支持 .xlsx / .xls</div></div>
+      <div class="loaded-view"><div class="file-head"><div><span class="badge" id="plannedBadge">0 个文件</span><p id="plannedTotal"></p></div><button class="remove" type="button" id="clearPlanned">全部移除</button></div><div class="file-list" id="plannedList"></div><span class="add-more">点击空白处继续添加文件</span></div>
+    </label>
+    <div class="connector">→</div>
+    <label class="drop actual" id="actualDrop">
+      <input id="actualInput" type="file" accept=".xlsx,.xls">
+      <div class="empty-view"><div class="drop-icon">②</div><h2>实际签到表</h2><p>点击或拖入一个 Excel 文件<br>已有工程和企业信息会保留，不会被覆盖</p><div class="hint">支持 .xlsx / .xls</div></div>
+      <div class="loaded-view"><div class="file-head"><span class="badge">输出底表</span><button class="remove" type="button" id="clearActual">移除</button></div><div class="single-name" id="actualName"></div><div class="single-meta" id="actualMeta"></div></div>
+    </label>
+  </section>
+
+  <section id="results" class="results">
+    <div class="panel">
+      <div class="panel-head"><h2>匹配结果</h2><div class="actions"><button class="btn secondary" id="reanalyze">重新分析</button><button class="btn primary" id="download">下载匹配结果</button></div></div>
+      <div class="stats">
+        <div class="stat good"><b id="matchedNum">0</b><span>自动匹配</span></div>
+        <div class="stat"><b id="keptNum">0</b><span>已有数据</span></div>
+        <div class="stat warn"><b id="unmatchedNum">0</b><span>未匹配</span></div>
+        <div class="stat bad"><b id="conflictNum">0</b><span>信息冲突</span></div>
+      </div>
+      <div id="notice" class="notice"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><h2>结果预览</h2><span class="caption" id="previewCount"></span></div>
+      <div class="table-wrap"><table class="table" id="preview"></table></div>
+      <p class="caption">绿色文字为本次自动回填内容；预览最多显示前 200 行，下载文件包含全部数据。</p>
+    </div>
+  </section>
+</main>
+
+<script>
+const state = { planned: [], actual: null, result: null };
+const headerNames = {
+  id: ['身份证号码','身份证号','身份证','证件号码','证件号','ID'],
+  name: ['姓名','名字','人员姓名'],
+  project: ['工程名称','工程','项目名称','项目'],
+  company: ['企业名称','企业','公司名称','公司','单位名称','单位']
+};
+const $ = id => document.getElementById(id);
+const clean = value => value == null ? '' : String(value).trim();
+const normHeader = value => clean(value).toLowerCase().replace(/[\s_\-—:：]/g,'');
+const normId = value => clean(value).toUpperCase().replace(/[^0-9X]/g,'');
+const isEmpty = value => ['', 'nan', 'null', 'undefined'].includes(clean(value).toLowerCase());
+const safe = value => { const div=document.createElement('div'); div.textContent=clean(value); return div.innerHTML; };
+
+function columnIndexes(headers){
+  const out={};
+  for(const [field,names] of Object.entries(headerNames)){
+    const candidates=new Set(names.map(normHeader));
+    out[field]=headers.findIndex(value=>candidates.has(normHeader(value)));
+  }
+  return out;
+}
+
+function findHeader(rows){
+  let best=null;
+  for(let i=0;i<Math.min(20,rows.length);i++){
+    const headers=rows[i].map(clean);
+    const cols=columnIndexes(headers);
+    const identity=Number(cols.id>=0)+Number(cols.name>=0);
+    if(!identity) continue;
+    const business=Number(cols.project>=0)+Number(cols.company>=0);
+    const score=identity*10+business*3;
+    if(!best||score>best.score) best={index:i,headers,cols,score};
+  }
+  return best;
+}
+
+async function parseFile(file, keepWorkbook=false){
+  if(!/\.(xlsx|xls)$/i.test(file.name)) throw new Error('仅支持 .xlsx 或 .xls 文件');
+  const workbook=XLSX.read(await file.arrayBuffer(),{type:'array',cellStyles:true,cellDates:true});
+  const sheetName=workbook.SheetNames[0];
+  const sheet=workbook.Sheets[sheetName];
+  const rows=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
+  const header=findHeader(rows);
+  if(!header) throw new Error('前 20 行内未找到身份证号或姓名表头');
+  const data=[];
+  for(let row=header.index+1;row<rows.length;row++){
+    if(rows[row].every(isEmpty)) continue;
+    data.push({values:rows[row],sheetRow:row});
+  }
+  if(!data.length) throw new Error('表头下方没有可用数据');
+  return {name:file.name,headers:header.headers,cols:header.cols,headerIndex:header.index,data,workbook:keepWorkbook?workbook:null,sheetName};
+}
+
+function showError(message){$('alert').textContent=message;$('alert').classList.add('show')}
+function clearError(){$('alert').classList.remove('show')}
+
+async function addPlanned(files){
+  clearError();
+  for(const file of files){
+    try{
+      const parsed=await parseFile(file);
+      const old=state.planned.findIndex(item=>item.name===parsed.name);
+      if(old>=0) state.planned[old]=parsed; else state.planned.push(parsed);
+    }catch(error){showError(file.name+'：'+error.message)}
+  }
+  renderUploads();
+  if(state.actual&&state.planned.length) analyze();
+}
+
+async function setActual(file){
+  clearError();
+  try{state.actual=await parseFile(file,true);renderUploads();if(state.planned.length)analyze()}
+  catch(error){showError(file.name+'：'+error.message)}
+}
+
+function renderUploads(){
+  $('plannedDrop').classList.toggle('loaded',state.planned.length>0);
+  $('actualDrop').classList.toggle('loaded',Boolean(state.actual));
+  $('plannedBadge').textContent=state.planned.length+' 个文件';
+  $('plannedTotal').textContent='共 '+state.planned.reduce((sum,item)=>sum+item.data.length,0)+' 条记录';
+  $('plannedList').innerHTML=state.planned.map((item,index)=>'<div class="file"><div>'+safe(item.name)+'<small>'+item.data.length+' 行 · '+recognized(item.cols)+'</small></div><button type="button" data-remove="'+index+'" aria-label="移除">×</button></div>').join('');
+  if(state.actual){$('actualName').textContent=state.actual.name;$('actualMeta').textContent=state.actual.data.length+' 行 · '+recognized(state.actual.cols)}
+}
+
+function recognized(cols){
+  return [['id','身份证'],['name','姓名'],['project','工程'],['company','企业']].filter(([key])=>cols[key]>=0).map(([,label])=>label).join('、');
+}
+
+function addCandidate(map,key,item){if(!key)return;if(!map.has(key))map.set(key,[]);map.get(key).push(item)}
+function unique(items,field){return new Set(items.map(item=>clean(item[field])).filter(Boolean))}
+function merge(items){
+  const out={};
+  for(const field of ['id','name','project','company']) out[field]=(items.find(item=>!isEmpty(item[field]))||{})[field]||'';
+  return out;
+}
+
+function buildIndex(){
+  const byId=new Map(),byName=new Map();
+  for(const file of state.planned){
+    for(const row of file.data){
+      const item={id:file.cols.id>=0?normId(row.values[file.cols.id]):'',name:file.cols.name>=0?clean(row.values[file.cols.name]):'',project:file.cols.project>=0?clean(row.values[file.cols.project]):'',company:file.cols.company>=0?clean(row.values[file.cols.company]):''};
+      addCandidate(byId,item.id,item);addCandidate(byName,item.name,item);
+    }
+  }
+  const idOK=new Map(),idBad=new Set(),nameOK=new Map(),nameBad=new Set();
+  for(const [id,items] of byId){
+    if(['name','project','company'].some(field=>unique(items,field).size>1)) idBad.add(id); else idOK.set(id,merge(items));
+  }
+  for(const [name,items] of byName){
+    const ids=unique(items,'id');
+    const ambiguous=ids.size>1||items.some(item=>!item.id)||['project','company'].some(field=>unique(items,field).size>1);
+    if(items.length>1&&ambiguous) nameBad.add(name); else nameOK.set(name,merge(items));
+  }
+  return {idOK,idBad,nameOK,nameBad};
+}
+
+function analyze(){
+  clearError();
+  const index=buildIndex(), actual=state.actual, headers=[...actual.headers], cols={...actual.cols}, added=[];
+  if(cols.project<0){cols.project=headers.length;headers.push('工程名称');added.push('工程名称')}
+  if(cols.company<0){cols.company=headers.length;headers.push('企业名称');added.push('企业名称')}
+  const rows=[];let matched=0,kept=0,unmatched=0,conflict=0;
+  for(const source of actual.data){
+    const values=[...source.values], id=actual.cols.id>=0?normId(values[actual.cols.id]):'', name=actual.cols.name>=0?clean(values[actual.cols.name]):'';
+    const hasProject=!isEmpty(values[cols.project]),hasCompany=!isEmpty(values[cols.company]);
+    let candidate=null,reason='';
+    if(hasProject&&hasCompany){kept++}
+    else if(id&&index.idBad.has(id)){reason='计划表中同一身份证对应的信息不一致'}
+    else if(id&&index.idOK.has(id)){candidate=index.idOK.get(id)}
+    else if(name&&index.nameBad.has(name)){reason='计划表中存在无法确认的同名人员'}
+    else if(name&&index.nameOK.has(name)){
+      candidate=index.nameOK.get(name);
+      if(id&&candidate.id&&id!==candidate.id){reason='签到表身份证与姓名候选不一致';candidate=null}
+    }
+    const filled=[];
+    if(reason){conflict++}
+    else if(candidate){
+      if(!hasProject&&candidate.project){values[cols.project]=candidate.project;filled.push(cols.project)}
+      if(!hasCompany&&candidate.company){values[cols.company]=candidate.company;filled.push(cols.company)}
+      if(filled.length) matched++; else unmatched++;
+    }else if(!(hasProject&&hasCompany)){unmatched++}
+    rows.push({values,sheetRow:source.sheetRow,filled,reason});
+  }
+  state.result={headers,cols,rows,added,stats:{matched,kept,unmatched,conflict}};
+  renderResult();
+}
+
+function renderResult(){
+  const result=state.result,stats=result.stats;
+  $('matchedNum').textContent=stats.matched;$('keptNum').textContent=stats.kept;$('unmatchedNum').textContent=stats.unmatched;$('conflictNum').textContent=stats.conflict;
+  const notices=[];
+  if(result.added.length) notices.push('实际签到表缺少“'+result.added.join('、')+'”列，下载时会在表尾新增。');
+  if(stats.conflict) notices.push(stats.conflict+' 行存在身份或候选信息冲突，已保留空白，请人工核对。');
+  if(stats.unmatched) notices.push(stats.unmatched+' 行未找到可确认的匹配记录。');
+  $('notice').classList.toggle('show',notices.length>0);$('notice').innerHTML=notices.length?'<ul><li>'+notices.map(safe).join('</li><li>')+'</li></ul>':'';
+  const visible=result.rows.slice(0,200);
+  let html='<thead><tr>'+result.headers.map(header=>'<th>'+safe(header)+'</th>').join('')+'</tr></thead><tbody>';
+  visible.forEach(row=>{
+    html+='<tr class="'+(row.reason?'conflict':row.filled.length?'matched':'')+'">';
+    for(let col=0;col<result.headers.length;col++) html+='<td class="'+(row.filled.includes(col)?'cell-fill':'')+'">'+safe(row.values[col])+'</td>';
+    html+='</tr>';
+  });
+  $('preview').innerHTML=html+'</tbody>';$('previewCount').textContent='共 '+result.rows.length+' 行';$('results').classList.add('show');
+}
+
+function download(){
+  if(!state.result||!state.actual)return;
+  const workbook=state.actual.workbook,sheet=workbook.Sheets[state.actual.sheetName],result=state.result;
+  result.headers.forEach((value,col)=>{sheet[XLSX.utils.encode_cell({r:state.actual.headerIndex,c:col})]={t:'s',v:value}});
+  result.rows.forEach(row=>row.values.forEach((value,col)=>{const address=XLSX.utils.encode_cell({r:row.sheetRow,c:col});sheet[address]={t:'s',v:clean(value)}}));
+  const oldRange=XLSX.utils.decode_range(sheet['!ref']||'A1:A1');
+  oldRange.e.c=Math.max(oldRange.e.c,result.headers.length-1);sheet['!ref']=XLSX.utils.encode_range(oldRange);
+  sheet['!autofilter']={ref:XLSX.utils.encode_range({s:{r:state.actual.headerIndex,c:0},e:{r:state.actual.headerIndex+result.rows.length,c:result.headers.length-1}})};
+  XLSX.writeFile(workbook,'[已匹配]_'+state.actual.name,{cellStyles:true,compression:true});
+}
+
+function bindDrop(drop,input,multiple){
+  drop.addEventListener('click',event=>{if(event.target.closest('button'))return;input.click()});
+  drop.addEventListener('dragover',event=>{event.preventDefault();drop.classList.add('drag')});
+  drop.addEventListener('dragleave',()=>drop.classList.remove('drag'));
+  drop.addEventListener('drop',event=>{event.preventDefault();drop.classList.remove('drag');const files=[...event.dataTransfer.files];multiple?addPlanned(files):files[0]&&setActual(files[0])});
+}
+
+bindDrop($('plannedDrop'),$('plannedInput'),true);bindDrop($('actualDrop'),$('actualInput'),false);
+$('plannedInput').addEventListener('change',event=>{addPlanned([...event.target.files]);event.target.value='' });
+$('actualInput').addEventListener('change',event=>{if(event.target.files[0])setActual(event.target.files[0]);event.target.value='' });
+$('plannedList').addEventListener('click',event=>{const button=event.target.closest('[data-remove]');if(!button)return;event.preventDefault();state.planned.splice(Number(button.dataset.remove),1);state.result=null;$('results').classList.remove('show');renderUploads();if(state.planned.length&&state.actual)analyze()});
+$('clearPlanned').addEventListener('click',event=>{event.preventDefault();state.planned=[];state.result=null;$('results').classList.remove('show');renderUploads()});
+$('clearActual').addEventListener('click',event=>{event.preventDefault();state.actual=null;state.result=null;$('results').classList.remove('show');renderUploads()});
+$('reanalyze').addEventListener('click',analyze);$('download').addEventListener('click',download);
+if(typeof XLSX==='undefined')showError('Excel 处理组件加载失败，请刷新页面后重试。');
+</script>
+</body>
+</html>
