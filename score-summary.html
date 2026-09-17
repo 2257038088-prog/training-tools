@@ -301,7 +301,7 @@ async function buildWorkbook(){
       const cell=ws.getCell(r,c); cell.style=clone(sourceStyles[c]); cell.value=vals[c-1]??'';
     }
     ws.getCell(r,3).numFmt='@'; ws.getCell(r,4).numFmt='@'; ws.getCell(r,7).numFmt='@';
-    ws.getCell(r,6).numFmt='m/d/yy h:mm';
+    ws.getCell(r,6).numFmt='yyyy/m/d h:mm';
   }
   return wb;
 }
